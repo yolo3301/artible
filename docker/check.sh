@@ -2,6 +2,7 @@
 
 RET=0
 DST_PREFIX=${DST_HOST}/${DST_REPO}
+HTTP_HOST=${HTTP_SCHEMA}${DST_HOST}
 
 echo ============== Start schema checks ===================
 
@@ -92,12 +93,13 @@ skopeo --insecure-policy copy --dest-tls-verify=false --dest-creds=${DST_USER}:$
 skopeo --insecure-policy copy --dest-tls-verify=false --dest-creds=${DST_USER}:${DST_PWD} dir:alpine_aarch64 docker://${DST_PREFIX}/alpine_ml:aarch64
 echo Finished preparing images
 
-token=$(curl -s -k -u ${DST_USER}:${DST_PWD} "${DST_HOST}/v2/token?account=${DST_USER}&scope=repository:${DST_REPO}/alpine:pull,push" | jq -r .token)
+echo Exchanging docker token...
+token=$(curl -s -k -u ${DST_USER}:${DST_PWD} "${HTTP_HOST}/v2/token?account=${DST_USER}&scope=repository:${DST_REPO}/alpine_ml:pull,push" | jq -r .token)
 
 echo Putting manifest list...
 ml_json=$(cat manifest_list.json)
-code=$(curl -s -w %{http_code} -o /dev/null -H "Authorization: Bearer ${token}" -H "Content-Type: application/vnd.docker.distribution.manifest.list.v2+json" -X PUT -d "${ml_json}" ${DST_HOST}/v2/${DST_REPO}/alpine_ml/manifests/latest)
-if test $code -eq 201
+code=$(curl -s -w %{http_code} -o /dev/null -H "Authorization: Bearer ${token}" -H "Content-Type: application/vnd.docker.distribution.manifest.list.v2+json" -X PUT -d "${ml_json}" ${HTTP_HOST}/v2/${DST_REPO}/alpine_ml/manifests/latest)
+if test $code -eq 201 || test $code -eq 200
 then
   echo Manifest list created
 else
@@ -106,7 +108,7 @@ else
 fi
 
 echo Verifying manifest list
-got_ml_type=$(curl -s -H "Authorization: Bearer ${token}" -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" ${DST_HOST}/v2/${DST_REPO}/alpine_ml/manifests/latest | jq -r .mediaType)
+got_ml_type=$(curl -s -H "Authorization: Bearer ${token}" -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" ${HTTP_HOST}/v2/${DST_REPO}/alpine_ml/manifests/latest | jq -r .mediaType)
 if [[ "$got_ml_type" == "application/vnd.docker.distribution.manifest.list.v2+json" ]]
 then
   echo Verified the manifest list mediaType is "application/vnd.docker.distribution.manifest.list.v2+json"
@@ -121,7 +123,7 @@ echo ============== Start schema conversion checks ==================
 
 echo Getting manifest list but accept schema 2
 
-got_ml_s2_type=$(curl -s -H "Authorization: Bearer ${token}" -H "Accept: application/vnd.docker.distribution.manifest.v2+json" ${DST_HOST}/v2/${DST_REPO}/alpine_ml/manifests/latest | jq -r .mediaType)
+got_ml_s2_type=$(curl -s -H "Authorization: Bearer ${token}" -H "Accept: application/vnd.docker.distribution.manifest.v2+json" ${HTTP_HOST}/v2/${DST_REPO}/alpine_ml/manifests/latest | jq -r .mediaType)
 if [[ "$got_ml_s2_type" == "application/vnd.docker.distribution.manifest.v2+json" ]]
 then
   echo Verified the manifest mediaType is "application/vnd.docker.distribution.manifest.v2+json"
@@ -134,7 +136,7 @@ echo Conversion manifest list -> v2s2 successful
 
 echo Getting manifest list but accept schema 1
 
-got_ml_s1_schema=$(curl -s -H "Authorization: Bearer ${token}" -H "Accept: application/json" ${DST_HOST}/v2/${DST_REPO}/alpine_ml/manifests/latest | jq .schemaVersion)
+got_ml_s1_schema=$(curl -s -H "Authorization: Bearer ${token}" -H "Accept: application/vnd.docker.distribution.manifest.v1+prettyjws" ${HTTP_HOST}/v2/${DST_REPO}/alpine_ml/manifests/latest | jq .schemaVersion)
 if test $got_ml_s1_schema -eq 1
 then
   echo Verified the manifest schema is 1
