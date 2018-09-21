@@ -26,6 +26,16 @@ else
   RET=1
 fi
 
+echo Pulling v2s1 image ${DST_PREFIX}/alpine:v2s1
+skopeo --insecure-policy copy --src-tls-verify=false --src-creds=${DST_USER}:${DST_PWD} docker://${DST_PREFIX}/alpine:v2s1 dir:alpine_download_v2s1
+if test $? -eq 0
+then
+  echo Downloaded v2s1 image ${DST_PREFIX}/alpine:v2s1
+else
+  echo Failed to pull v2s1 image ${DST_PREFIX}/alpine:v2s1
+  RET=1
+fi
+
 echo Pushing v2s2 image ${DST_PREFIX}/alpine:v2s2
 skopeo --insecure-policy copy --dest-tls-verify=false --dest-creds=${DST_USER}:${DST_PWD} dir:alpine_v2s2 docker://${DST_PREFIX}/alpine:v2s2
 if test $? -eq 0
@@ -54,6 +64,16 @@ else
   RET=1
 fi
 
+echo Pulling v2s2 image ${DST_PREFIX}/alpine:v2s2
+skopeo --insecure-policy copy --src-tls-verify=false --src-creds=${DST_USER}:${DST_PWD} docker://${DST_PREFIX}/alpine:v2s2 dir:alpine_download_v2s2
+if test $? -eq 0
+then
+  echo Downloaded v2s2 image ${DST_PREFIX}/alpine:v2s2
+else
+  echo Failed to pull v2s2 image ${DST_PREFIX}/alpine:v2s2
+  RET=1
+fi
+
 echo Pushing oci image ${DST_PREFIX}/alpine:oci
 skopeo --insecure-policy copy --dest-tls-verify=false --dest-creds=${DST_USER}:${DST_PWD} dir:alpine_oci docker://${DST_PREFIX}/alpine:oci
 if test $? -eq 0
@@ -79,6 +99,16 @@ then
   echo Verified the manifest mediaType is "application/vnd.oci.image.config.v1+json"
 else
   echo Unexpected manifest mediaType $oci_got_type
+  RET=1
+fi
+
+echo Pulling oci image ${DST_PREFIX}/alpine:oci
+skopeo --insecure-policy copy --src-tls-verify=false --src-creds=${DST_USER}:${DST_PWD} docker://${DST_PREFIX}/alpine:oci dir:alpine_download_oci
+if test $? -eq 0
+then
+  echo Downloaded oci image ${DST_PREFIX}/alpine:oci
+else
+  echo Failed to pull oci image ${DST_PREFIX}/alpine:oci
   RET=1
 fi
 
@@ -114,6 +144,16 @@ then
   echo Verified the manifest list mediaType is "application/vnd.docker.distribution.manifest.list.v2+json"
 else
   echo Unexpected manifest list mediaType $got_ml_type
+  RET=1
+fi
+
+echo Pulling image ${DST_PREFIX}/alpine_ml:latest
+skopeo --insecure-policy copy --src-tls-verify=false --src-creds=${DST_USER}:${DST_PWD} docker://${DST_PREFIX}/alpine_ml:latest dir:alpine_download_ml
+if test $? -eq 0
+then
+  echo Downloaded image ${DST_PREFIX}/alpine_ml:latest
+else
+  echo Failed to pull image ${DST_PREFIX}/alpine_ml:latest
   RET=1
 fi
 
